@@ -1,2 +1,5 @@
 .idea/
 abandoned.txt
+model/*
+!model/.gitkeep
+!model/model.go
