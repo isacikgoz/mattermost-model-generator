@@ -28,7 +28,6 @@ type GetterParams struct {
 }
 
 type InitializerParams struct {
-	StructName string
 	ParamName string
 	Fields []InitializerField
 }
