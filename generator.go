@@ -13,17 +13,10 @@ import (
 	"text/template"
 )
 
-type Templates struct {
-	File   *template.Template
-	Getter *template.Template
-	Initializer *template.Template
-}
-
-var templates Templates
-
-type FileParams struct {
-	Getters string
-	Initializer string
+type TemplateParams struct {
+	TypeName string
+	Getters []GetterParams
+	Initializer InitializerParams
 }
 
 type GetterParams struct {
@@ -49,15 +42,8 @@ type InitializerField struct {
 
 func main() {
 	fmt.Println("Starting code generation.")
-	initTemplates()
 	processFile("model.go")
 	fmt.Println("Code generation completed.")
-}
-
-func initTemplates() {
-	templates.File = initTemplate("file", "file.go.tmpl")
-	templates.Getter = initTemplate("getter", "getter.go.tmpl")
-	templates.Initializer = initTemplate("initializer", "initializer.go.tmpl")
 }
 
 func initTemplate(name, file string) *template.Template {
@@ -96,35 +82,37 @@ func processFile(filePath string) {
 }
 
 func processStruct(st *ast.StructType, typeName string) {
-	getters := processGetters(st.Fields.List, typeName)
-	initializer := processInitializer(st.Fields.List, typeName)
-
-	params := FileParams{
-		Getters: getters,
-		Initializer: initializer,
+	params := TemplateParams{
+		TypeName: typeName,
+		Getters: generateGetters(st.Fields.List, typeName),
+		Initializer: generateInitializer(st.Fields.List, typeName),
 	}
 
 	buf := new(bytes.Buffer)
-	buf.Write(generateFile(params))
+	buf.Write(renderFile(params))
 	ioutil.WriteFile("model/"+strings.ToLower(typeName)+".go", buf.Bytes(), 0664)
 }
 
-func processGetters(fields []*ast.Field, typeName string) string {
-	gettersBuf := new(bytes.Buffer)
-
+func generateGetters(fields []*ast.Field, typeName string) []GetterParams {
+	params := []GetterParams{}
 	for _, field := range fields {
 		fieldName := field.Names[0].Name
 		fieldType := field.Type.(*ast.Ident).Name
-		gettersBuf.Write(generateGetter(typeName, fieldName, fieldType))
+
+		params = append(params, GetterParams{
+			ReceiverType: typeName,
+			ReceiverName: strings.ToLower(string(typeName[0])),
+			FieldType:    fieldType,
+			FieldName:    fieldName,
+			FuncName:     strings.ToUpper(string(fieldName[0])) + fieldName[1:],
+		})
 	}
 
-	return string(gettersBuf.Bytes())
+	return params
 }
 
-func processInitializer(fields []*ast.Field, typeName string) string {
-	buf := new(bytes.Buffer)
-	initializerParams := InitializerParams{
-		StructName: typeName,
+func generateInitializer(fields []*ast.Field, typeName string) InitializerParams {
+	params := InitializerParams{
 		ParamName: strings.ToLower(string(typeName[0])),
 	}
 
@@ -133,50 +121,22 @@ func processInitializer(fields []*ast.Field, typeName string) string {
 		fieldType := field.Type.(*ast.Ident).Name
 		// FIXME: Parse the struct tags properly.
 		jsonName := field.Tag.Value
-		initializerField := InitializerField{
+
+		params.Fields = append(params.Fields, InitializerField{
 			Name: strings.ToUpper(string(fieldName[0])) + fieldName[1:],
 			InternalName: fieldName,
 			JSONName: jsonName,
 			Type: fieldType,
-		}
-		initializerParams.Fields = append(initializerParams.Fields, initializerField)
+		})
 	}
 
-	buf.Write(generateInitializer(initializerParams))
-	return string(buf.Bytes())
+	return params
 }
 
-func generateFile(params FileParams) []byte {
+func renderFile(params TemplateParams) []byte {
 	buf := new(bytes.Buffer)
-	err := templates.File.Execute(buf, params)
-	if err != nil {
-		panic(err)
-	}
-
-	return buf.Bytes()
-}
-
-func generateGetter(receiverType, fieldName, fieldType string) []byte {
-	params := GetterParams{
-		ReceiverType: receiverType,
-		ReceiverName: strings.ToLower(string(receiverType[0])),
-		FieldType:    fieldType,
-		FieldName:    fieldName,
-		FuncName:     strings.ToUpper(string(fieldName[0])) + fieldName[1:],
-	}
-
-	buf := new(bytes.Buffer)
-	err := templates.Getter.Execute(buf, params)
-	if err != nil {
-		panic(err)
-	}
-
-	return buf.Bytes()
-}
-
-func generateInitializer(params InitializerParams) []byte {
-	buf := new(bytes.Buffer)
-	err := templates.Initializer.Execute(buf, params)
+	tmpl := initTemplate("file", "file.go.tmpl")
+	err := tmpl.Execute(buf, params)
 	if err != nil {
 		panic(err)
 	}

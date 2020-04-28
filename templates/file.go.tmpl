@@ -6,7 +6,25 @@
 package model
 
 // -------------------- Property Getters ------------------------ //
-{{.Getters}}
-
+{{range .Getters}}
+// {{.FuncName}} gets the {{.FuncName}} property of the {{.ReceiverType}}
+func ({{.ReceiverName}} *{{.ReceiverType}}) {{.FuncName}}() {{.FieldType}} {
+	return {{.ReceiverName}}.{{.FieldName}}
+}
+{{end}}
 // -------------------- Initializer -------------------- //
-{{.Initializer}}
+
+// {{.TypeName}}Initializer provides a container struct to initialize a new {{.TypeName}} object.
+type {{.TypeName}}Initializer struct {
+    {{range .Initializer.Fields}}{{.Name}} {{.Type}} {{.JSONName}}
+    {{end}}
+}
+
+// New{{.TypeName}} creates a new instance of {{.TypeName}} populated with the values from a
+// {{.TypeName}}Initializer instance.
+func New{{.TypeName}}({{.Initializer.ParamName}} *{{.TypeName}}Initializer) *{{.TypeName}} {
+    return &{{.TypeName}} {
+        {{range .Initializer.Fields}}{{.InternalName}}: {{$.Initializer.ParamName}}.{{.Name}},
+        {{end}}
+    }
+}
