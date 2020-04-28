@@ -5,6 +5,8 @@
 
 package model
 
+// This file contains generated code based on the model.{{.BaseTypeName}} struct.
+
 // -------------------- Property Getters ------------------------ //
 {{range .Getters}}
 // {{.FuncName}} gets the {{.FuncName}} property of the {{.ReceiverType}}
@@ -14,17 +16,28 @@ func ({{.ReceiverName}} *{{.ReceiverType}}) {{.FuncName}}() {{.FieldType}} {
 {{end}}
 // -------------------- Initializer -------------------- //
 
-// {{.TypeName}}Initializer provides a container struct to initialize a new {{.TypeName}} object.
-type {{.TypeName}}Initializer struct {
-    {{range .Initializer.Fields}}{{.Name}} {{.Type}} {{.JSONName}}
+// {{.Initializer.TypeName}} provides a container struct to initialize a new {{.BaseTypeName}} object.
+type {{.Initializer.TypeName}} struct {
+    {{range .Initializer.Fields}}{{.Name}} {{.Type}} {{.JSONTag}}
     {{end}}
 }
 
-// New{{.TypeName}} creates a new instance of {{.TypeName}} populated with the values from a
-// {{.TypeName}}Initializer instance.
-func New{{.TypeName}}({{.Initializer.ParamName}} *{{.TypeName}}Initializer) *{{.TypeName}} {
-    return &{{.TypeName}} {
-        {{range .Initializer.Fields}}{{.InternalName}}: {{$.Initializer.ParamName}}.{{.Name}},
+// New{{.BaseTypeName}} creates a new instance of {{.BaseTypeName}} populated with the values from a
+// {{.Initializer.TypeName}} instance.
+func New{{.BaseTypeName}}({{.ReceiverName}} *{{.Initializer.TypeName}}) *{{.BaseTypeName}} {
+    return &{{.BaseTypeName}} {
+        {{range .Initializer.Fields}}{{.InternalName}}: {{$.ReceiverName}}.{{.Name}},
         {{end}}
     }
+}
+
+// -------------------- JSON Processing Functions -------------------- //
+
+func ({{.ReceiverName}} *{{.BaseTypeName}}) UnmarshalJSON(b []byte) (*{{.BaseTypeName}}, error) {
+    var data *{{.Initializer.TypeName}}
+    err := json.Unmarshal(b, data)
+    if err != nil {
+        return nil, err
+    }
+    return New{{.BaseTypeName}}(data), nil
 }
