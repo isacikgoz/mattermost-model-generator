@@ -16,12 +16,14 @@ import (
 type Templates struct {
 	File   *template.Template
 	Getter *template.Template
+	Initializer *template.Template
 }
 
 var templates Templates
 
 type FileParams struct {
 	Getters string
+	Initializer string
 }
 
 type GetterParams struct {
@@ -30,6 +32,19 @@ type GetterParams struct {
 	FieldType    string
 	FieldName    string
 	FuncName     string
+}
+
+type InitializerParams struct {
+	StructName string
+	ParamName string
+	Fields []InitializerField
+}
+
+type InitializerField struct {
+	Name string
+	InternalName string
+	JSONName string
+	Type string
 }
 
 func main() {
@@ -42,6 +57,7 @@ func main() {
 func initTemplates() {
 	templates.File = initTemplate("file", "file.go.tmpl")
 	templates.Getter = initTemplate("getter", "getter.go.tmpl")
+	templates.Initializer = initTemplate("initializer", "initializer.go.tmpl")
 }
 
 func initTemplate(name, file string) *template.Template {
@@ -81,9 +97,15 @@ func processFile(filePath string) {
 
 func processStruct(st *ast.StructType, typeName string) {
 	getters := processGetters(st.Fields.List, typeName)
+	initializer := processInitializer(st.Fields.List, typeName)
+
+	params := FileParams{
+		Getters: getters,
+		Initializer: initializer,
+	}
 
 	buf := new(bytes.Buffer)
-	buf.Write(generateFile(getters))
+	buf.Write(generateFile(params))
 	ioutil.WriteFile("model/"+strings.ToLower(typeName)+".go", buf.Bytes(), 0664)
 }
 
@@ -99,11 +121,32 @@ func processGetters(fields []*ast.Field, typeName string) string {
 	return string(gettersBuf.Bytes())
 }
 
-func generateFile(getters string) []byte {
-	params := FileParams{
-		Getters: getters,
+func processInitializer(fields []*ast.Field, typeName string) string {
+	buf := new(bytes.Buffer)
+	initializerParams := InitializerParams{
+		StructName: typeName,
+		ParamName: strings.ToLower(string(typeName[0])),
 	}
 
+	for _, field := range fields {
+		fieldName := field.Names[0].Name
+		fieldType := field.Type.(*ast.Ident).Name
+		// FIXME: Parse the struct tags properly.
+		jsonName := field.Tag.Value
+		initializerField := InitializerField{
+			Name: strings.ToUpper(string(fieldName[0])) + fieldName[1:],
+			InternalName: fieldName,
+			JSONName: jsonName,
+			Type: fieldType,
+		}
+		initializerParams.Fields = append(initializerParams.Fields, initializerField)
+	}
+
+	buf.Write(generateInitializer(initializerParams))
+	return string(buf.Bytes())
+}
+
+func generateFile(params FileParams) []byte {
 	buf := new(bytes.Buffer)
 	err := templates.File.Execute(buf, params)
 	if err != nil {
@@ -124,6 +167,16 @@ func generateGetter(receiverType, fieldName, fieldType string) []byte {
 
 	buf := new(bytes.Buffer)
 	err := templates.Getter.Execute(buf, params)
+	if err != nil {
+		panic(err)
+	}
+
+	return buf.Bytes()
+}
+
+func generateInitializer(params InitializerParams) []byte {
+	buf := new(bytes.Buffer)
+	err := templates.Initializer.Execute(buf, params)
 	if err != nil {
 		panic(err)
 	}
