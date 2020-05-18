@@ -11,6 +11,8 @@ import (
 	"io/ioutil"
 	"strings"
 	"text/template"
+
+	"github.com/fatih/structtag"
 )
 
 type ModelParams struct {
@@ -120,13 +122,19 @@ func generateInitializer(fields []*ast.Field, baseTypeName string) InitializerPa
 	for _, field := range fields {
 		fieldName := field.Names[0].Name
 		fieldType := field.Type.(*ast.Ident).Name
-		// FIXME: Parse the struct tags properly.
-		jsonTag := field.Tag.Value
+
+		parsedTags := parseStructTags(field.Tag.Value)
+
+		jsonTag, err := parsedTags.Get("json")
+		jsonTagString := ""
+		if err == nil {
+			jsonTagString = jsonTag.String()
+		}
 
 		params.Fields = append(params.Fields, InitializerField{
 			Name:         strings.ToUpper(string(fieldName[0])) + fieldName[1:],
 			InternalName: fieldName,
-			JSONTag:      jsonTag,
+			JSONTag:      jsonTagString,
 			Type:         fieldType,
 		})
 	}
@@ -147,4 +155,14 @@ func renderFile(params ModelParams) []byte {
 
 func makeReceiverName(receiverType string) string {
 	return strings.ToLower(string(receiverType[0]))
+}
+
+func parseStructTags(tags string) *structtag.Tags {
+	tags = strings.ReplaceAll(tags, "`", "")
+	parsedTags, err := structtag.Parse(tags)
+	if err != nil {
+		panic(err)
+	}
+
+	return parsedTags
 }

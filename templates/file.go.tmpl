@@ -18,7 +18,7 @@ func ({{.ReceiverName}} *{{.ReceiverType}}) {{.FuncName}}() {{.FieldType}} {
 
 // {{.Initializer.TypeName}} provides a container struct to initialize a new {{.BaseTypeName}} object.
 type {{.Initializer.TypeName}} struct {
-    {{range .Initializer.Fields}}{{.Name}} {{.Type}} {{.JSONTag}}
+    {{range .Initializer.Fields}}{{.Name}} {{.Type}} `{{.JSONTag}}`
     {{end}}
 }
 
