@@ -16,30 +16,14 @@ import (
 )
 
 type ModelParams struct {
-	BaseTypeName string
-	ReceiverName string
-	Getters      []GetterParams
-	Initializer  InitializerParams
+	Type   string
+	Fields []Field
 }
 
-type GetterParams struct {
-	ReceiverType string
-	ReceiverName string
-	FieldType    string
-	FieldName    string
-	FuncName     string
-}
-
-type InitializerParams struct {
-	TypeName string
-	Fields   []InitializerField
-}
-
-type InitializerField struct {
-	Name         string
-	InternalName string
-	JSONTag      string
-	Type         string
+type Field struct {
+	Name string
+	Type string
+	Tags map[string][]string
 }
 
 func main() {
@@ -53,8 +37,27 @@ func initTemplate(name, file string) *template.Template {
 	if err != nil {
 		panic(err)
 	}
+	funcMap := template.FuncMap{
+		// make s string start with upper case
+		"public": func(s string) string {
+			return strings.Title(s)
+		},
+		// make s string start with upper case
+		"receiver": func(s string) string {
+			return strings.ToLower(string(s[0]))
+		},
+		// prints only json tags for a field
+		"json": func(tags map[string][]string) string {
+			for k, v := range tags {
+				if k == "json" {
+					return "`json:\"" + strings.Join(v, ",") + "\"`"
+				}
+			}
+			return ""
+		},
+	}
 
-	tmpl, err := template.New(name).Parse(string(data))
+	tmpl, err := template.New(name).Funcs(funcMap).Parse(string(data))
 	if err != nil {
 		panic(err)
 	}
@@ -85,84 +88,44 @@ func processFile(filePath string) {
 
 func processStruct(st *ast.StructType, typeName string) {
 	params := ModelParams{
-		BaseTypeName: typeName,
-		ReceiverName: makeReceiverName(typeName),
-		Getters:      generateGetters(st.Fields.List, typeName),
-		Initializer:  generateInitializer(st.Fields.List, typeName),
+		Type:   typeName,
+		Fields: generateFields(st.Fields.List),
 	}
-
-	buf := new(bytes.Buffer)
-	buf.Write(renderFile(params))
-	ioutil.WriteFile("model/"+strings.ToLower(typeName)+".go", buf.Bytes(), 0664)
+	for _, pkg := range []string{"client", "model"} {
+		buf := new(bytes.Buffer)
+		buf.Write(renderFile(pkg, params))
+		ioutil.WriteFile(pkg+"/"+strings.ToLower(typeName)+".go", buf.Bytes(), 0664)
+	}
 }
 
-func generateGetters(fields []*ast.Field, typeName string) []GetterParams {
-	params := []GetterParams{}
+func generateFields(fields []*ast.Field) []Field {
+	var fs []Field
 	for _, field := range fields {
-		fieldName := field.Names[0].Name
-		fieldType := field.Type.(*ast.Ident).Name
-
-		params = append(params, GetterParams{
-			ReceiverType: typeName,
-			ReceiverName: makeReceiverName(typeName),
-			FieldType:    fieldType,
-			FieldName:    fieldName,
-			FuncName:     strings.ToUpper(string(fieldName[0])) + fieldName[1:],
-		})
-	}
-
-	return params
-}
-
-func generateInitializer(fields []*ast.Field, baseTypeName string) InitializerParams {
-	params := InitializerParams{
-		TypeName: fmt.Sprintf("%sInitializer", baseTypeName),
-	}
-
-	for _, field := range fields {
-		fieldName := field.Names[0].Name
-		fieldType := field.Type.(*ast.Ident).Name
-
-		parsedTags := parseStructTags(field.Tag.Value)
-
-		jsonTag, err := parsedTags.Get("json")
-		jsonTagString := ""
-		if err == nil {
-			jsonTagString = jsonTag.String()
+		st, err := structtag.Parse(strings.ReplaceAll(field.Tag.Value, "`", ""))
+		if err != nil {
+			panic(err)
 		}
 
-		params.Fields = append(params.Fields, InitializerField{
-			Name:         strings.ToUpper(string(fieldName[0])) + fieldName[1:],
-			InternalName: fieldName,
-			JSONTag:      jsonTagString,
-			Type:         fieldType,
+		tags := make(map[string][]string)
+		for _, tag := range st.Tags() {
+			tags[tag.Key] = append([]string{tag.Name}, tag.Options...)
+		}
+		fs = append(fs, Field{
+			Name: field.Names[0].Name,
+			Type: field.Type.(*ast.Ident).Name,
+			Tags: tags,
 		})
 	}
-
-	return params
+	return fs
 }
 
-func renderFile(params ModelParams) []byte {
+func renderFile(pkg string, params ModelParams) []byte {
 	buf := new(bytes.Buffer)
-	tmpl := initTemplate("model", "model.go.tmpl")
+	tmpl := initTemplate(pkg, pkg+".go.tmpl")
 	err := tmpl.Execute(buf, params)
 	if err != nil {
 		panic(err)
 	}
 
 	return buf.Bytes()
-}
-
-func makeReceiverName(receiverType string) string {
-	return strings.ToLower(string(receiverType[0]))
-}
-
-func parseStructTags(tags string) *structtag.Tags {
-	tags = strings.ReplaceAll(tags, "`", "")
-	parsedTags, err := structtag.Parse(tags)
-	if err != nil {
-		panic(err)
-	}
-
-	return parsedTags
 }
