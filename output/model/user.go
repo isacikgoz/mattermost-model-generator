@@ -8,29 +8,20 @@ package model
 
 import "encoding/json"
 
+// User is ...
 type User struct {
 	id       string
 	username string
 }
 
-// -------------------- Property Getters ------------------------ //
-
-// Id gets the Id property of the User
-func (u *User) Id() string {
-	return u.id
-}
-
-// Username gets the Username property of the User
-func (u *User) Username() string {
-	return u.username
-}
-
-// -------------------- Initializer -------------------- //
-
 // UserInitializer provides a container struct to initialize a new User object.
 type UserInitializer struct {
 	Id       string `json:"id"`
 	Username string `json:"username"`
+}
+
+// UserPatch is a struct to patch a User object.
+type UserPatch struct {
 }
 
 // NewUser creates a new instance of User populated with the values from a
@@ -42,7 +33,30 @@ func NewUser(u *UserInitializer) *User {
 	}
 }
 
-// -------------------- JSON Processing Functions -------------------- //
+// ------------------------ Patch object ------------------------ //
+
+// Apply applies the patch to the object
+func (u *User) Apply(p *UserPatch) {
+	if p == nil {
+		return
+	}
+
+	return
+}
+
+// ---------------------- Property Getters ---------------------- //
+
+// Id gets the Id property of the User
+func (u *User) Id() string {
+	return u.id
+}
+
+// Username gets the Username property of the User
+func (u *User) Username() string {
+	return u.username
+}
+
+// ------------------ JSON Processing Functions ------------------ //
 
 func (u *User) UnmarshalJSON(b []byte) error {
 	var data *UserInitializer

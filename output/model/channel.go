@@ -14,7 +14,49 @@ type Channel struct {
 	createAt int64
 }
 
-// -------------------- Property Getters ------------------------ //
+// ChannelInitializer provides a container struct to initialize a new Channel object.
+type ChannelInitializer struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	CreateAt int64  `json:"create_at"`
+}
+
+// ChannelPatch is a struct to patch a Channel object.
+type ChannelPatch struct {
+	Name     *string `json:"name"`
+	CreateAt *int64  `json:"create_at"`
+}
+
+// NewChannel creates a new instance of Channel populated with the values from a
+// ChannelInitializer instance.
+func NewChannel(c *ChannelInitializer) *Channel {
+	return &Channel{
+		id:       c.Id,
+		name:     c.Name,
+		createAt: c.CreateAt,
+	}
+}
+
+// ------------------------ Patch object ------------------------ //
+
+// Apply applies the patch to the object
+func (c *Channel) Apply(p *ChannelPatch) {
+	if p == nil {
+		return
+	}
+
+	if p.Name != nil {
+		c.name = *p.Name
+	}
+
+	if p.CreateAt != nil {
+		c.createAt = *p.CreateAt
+	}
+
+	return
+}
+
+// ---------------------- Property Getters ---------------------- //
 
 // Id gets the Id property of the Channel
 func (c *Channel) Id() string {
@@ -31,26 +73,7 @@ func (c *Channel) CreateAt() int64 {
 	return c.createAt
 }
 
-// -------------------- Initializer -------------------- //
-
-// ChannelInitializer provides a container struct to initialize a new Channel object.
-type ChannelInitializer struct {
-	Id       string `json:"id"`
-	Name     string `json:"name"`
-	CreateAt int64  `json:"create_at"`
-}
-
-// NewChannel creates a new instance of Channel populated with the values from a
-// ChannelInitializer instance.
-func NewChannel(c *ChannelInitializer) *Channel {
-	return &Channel{
-		id:       c.Id,
-		name:     c.Name,
-		createAt: c.CreateAt,
-	}
-}
-
-// -------------------- JSON Processing Functions -------------------- //
+// ------------------ JSON Processing Functions ------------------ //
 
 func (c *Channel) UnmarshalJSON(b []byte) error {
 	var data *ChannelInitializer

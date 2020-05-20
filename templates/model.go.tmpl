@@ -8,24 +8,22 @@ package model
 
 import "encoding/json"
 
+// {{.Type}} is ...
 type {{.Type}} struct {
    {{range .Fields}} {{.Name}} {{.Type}}
    {{end}}
 }
 
-// -------------------- Property Getters ------------------------ //
-{{range .Fields}}
-// {{public .Name}} gets the {{public .Name}} property of the {{$.Type}}
-func ({{receiver $.Type}} *{{$.Type}}) {{public .Name}}() {{.Type}} {
-	return {{receiver $.Type}}.{{.Name}}
-}
-{{end}}
-// -------------------- Initializer -------------------- //
-
 // {{.Type}}Initializer provides a container struct to initialize a new {{.Type}} object.
 type {{.Type}}Initializer struct {
     {{range .Fields}}{{public .Name}} {{.Type}} {{json .Tags}}
     {{end}}
+}
+
+// {{.Type}}Patch is a struct to patch a {{.Type}} object.
+type {{.Type}}Patch struct {
+    {{range .Fields}}{{if patch_field .Tags}}{{public .Name}} *{{.Type}} {{json .Tags}}
+    {{end}}{{end}}
 }
 
 // New{{.Type}} creates a new instance of {{.Type}} populated with the values from a
@@ -37,7 +35,30 @@ func New{{.Type}}({{receiver .Type}} *{{.Type}}Initializer) *{{.Type}} {
     }
 }
 
-// -------------------- JSON Processing Functions -------------------- //
+// ------------------------ Patch object ------------------------ //
+
+// Apply applies the patch to the object
+func ({{receiver .Type}} *{{.Type}}) Apply(p *{{.Type}}Patch) {
+    if p == nil {
+        return
+    }
+    {{range .Fields}} {{if patch_field .Tags}}if p.{{public .Name}} != nil {
+        {{receiver $.Type}}.{{.Name}} = *p.{{public .Name}}
+    }
+    {{end}}
+    {{end}} 
+    return
+}
+
+// ---------------------- Property Getters ---------------------- //
+{{range .Fields}}
+// {{public .Name}} gets the {{public .Name}} property of the {{$.Type}}
+func ({{receiver $.Type}} *{{$.Type}}) {{public .Name}}() {{.Type}} {
+	return {{receiver $.Type}}.{{.Name}}
+}
+{{end}}
+
+// ------------------ JSON Processing Functions ------------------ //
 
 func ({{receiver .Type}} *{{.Type}}) UnmarshalJSON(b []byte) (error) {
     var data *{{.Type}}Initializer

@@ -23,4 +23,16 @@ var funcMap = template.FuncMap{
 		}
 		return ""
 	},
+	"patch_field": func(tags map[string][]string) bool {
+		for k, v := range tags {
+			if k == "model" {
+				for _, s := range v {
+					if s == "patch" {
+						return true
+					}
+				}
+			}
+		}
+		return false
+	},
 }
