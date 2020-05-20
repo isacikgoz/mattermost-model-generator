@@ -8,7 +8,6 @@ package model
 
 import "encoding/json"
 
-// User is ...
 type User struct {
 	id       string
 	username string
@@ -20,10 +19,6 @@ type UserInitializer struct {
 	Username string `json:"username"`
 }
 
-// UserPatch is a struct to patch a User object.
-type UserPatch struct {
-}
-
 // NewUser creates a new instance of User populated with the values from a
 // UserInitializer instance.
 func NewUser(u *UserInitializer) *User {
@@ -31,17 +26,6 @@ func NewUser(u *UserInitializer) *User {
 		id:       u.Id,
 		username: u.Username,
 	}
-}
-
-// ------------------------ Patch object ------------------------ //
-
-// Apply applies the patch to the object
-func (u *User) Apply(p *UserPatch) {
-	if p == nil {
-		return
-	}
-
-	return
 }
 
 // ---------------------- Property Getters ---------------------- //

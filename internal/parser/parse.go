@@ -22,20 +22,22 @@ func ParseFile(path string) ([]*model.Struct, error) {
 	var structs []*model.Struct
 	ast.Inspect(file, func(n ast.Node) bool {
 		tp, ok := n.(*ast.TypeSpec)
-		if ok {
-			st, ok := tp.Type.(*ast.StructType)
-			if ok {
-				fields, err := parseFields(st.Fields.List)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "could not parse fields for %q: %s", tp.Name.Name, err)
-					return false // maybe replace this with a panic?
-				}
-				structs = append(structs, &model.Struct{
-					Type:   tp.Name.Name,
-					Fields: fields,
-				})
-			}
+		if !ok {
+			return true
 		}
+		st, ok := tp.Type.(*ast.StructType)
+		if !ok {
+			return true
+		}
+		fields, err := parseFields(st.Fields.List)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not parse fields for %q: %s", tp.Name.Name, err)
+			return false // maybe replace this with a panic?
+		}
+		structs = append(structs, &model.Struct{
+			Type:   tp.Name.Name,
+			Fields: fields,
+		})
 		return true
 	})
 
