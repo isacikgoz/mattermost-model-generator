@@ -27,7 +27,7 @@ func ParseFile(path string) ([]*model.Struct, error) {
 			if ok {
 				fields, err := parseFields(st.Fields.List)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "could not parse fields for %q: %w", tp.Name.Name, err)
+					fmt.Fprintf(os.Stderr, "could not parse fields for %q: %s", tp.Name.Name, err)
 					return false // maybe replace this with a panic?
 				}
 				structs = append(structs, &model.Struct{

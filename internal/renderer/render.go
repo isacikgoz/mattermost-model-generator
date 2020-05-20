@@ -2,7 +2,6 @@ package renderer
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,6 +10,8 @@ import (
 
 	"github.com/grundleborg/mattermost-model-generator/internal/model"
 )
+
+const templatesDir = "templates"
 
 // Render generates the file for the struct
 func Render(pkg model.Package, st *model.Struct) ([]byte, error) {
@@ -28,6 +29,7 @@ func Render(pkg model.Package, st *model.Struct) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// RenderToFile renders struct to a file in the package folder
 func RenderToFile(dir string, pkg model.Package, st *model.Struct) error {
 	buf := new(bytes.Buffer)
 	bytes, err := Render(pkg, st)
@@ -36,15 +38,16 @@ func RenderToFile(dir string, pkg model.Package, st *model.Struct) error {
 	}
 	buf.Write(bytes)
 
-	os.MkdirAll(filepath.Join(dir, string(pkg)), 0755)
-	fmt.Println(filepath.Join(dir, string(pkg)))
+	if err := os.MkdirAll(filepath.Join(dir, string(pkg)), 0755); err != nil {
+		return err
+	}
 
 	dstFile := filepath.Join(dir, string(pkg), strings.ToLower(st.Type)+".go")
 	return ioutil.WriteFile(dstFile, buf.Bytes(), 0664)
 }
 
 func initTemplate(name string) (*template.Template, error) {
-	data, err := ioutil.ReadFile("templates/" + name + ".go.tmpl")
+	data, err := ioutil.ReadFile(filepath.Join(templatesDir, name+".go.tmpl"))
 	if err != nil {
 		return nil, err
 	}

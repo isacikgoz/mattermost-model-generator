@@ -7,7 +7,6 @@
 package client
 
 type User struct {
-    Id string `json:"id"`
-    Username string `json:"username"`
-   
+	Id       string `json:"id"`
+	Username string `json:"username"`
 }

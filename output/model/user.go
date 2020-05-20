@@ -9,9 +9,8 @@ package model
 import "encoding/json"
 
 type User struct {
-    id string
-    username string
-   
+	id       string
+	username string
 }
 
 // -------------------- Property Getters ------------------------ //
@@ -30,37 +29,34 @@ func (u *User) Username() string {
 
 // UserInitializer provides a container struct to initialize a new User object.
 type UserInitializer struct {
-    Id string `json:"id"`
-    Username string `json:"username"`
-    
+	Id       string `json:"id"`
+	Username string `json:"username"`
 }
 
 // NewUser creates a new instance of User populated with the values from a
 // UserInitializer instance.
 func NewUser(u *UserInitializer) *User {
-    return &User {
-        id: u.Id,
-        username: u.Username,
-        
-    }
+	return &User{
+		id:       u.Id,
+		username: u.Username,
+	}
 }
 
 // -------------------- JSON Processing Functions -------------------- //
 
-func (u *User) UnmarshalJSON(b []byte) (error) {
-    var data *UserInitializer
-    err := json.Unmarshal(b, data)
-    if err != nil {
-        return err
-    }
-    *u = *NewUser(data)
-    return nil
+func (u *User) UnmarshalJSON(b []byte) error {
+	var data *UserInitializer
+	err := json.Unmarshal(b, data)
+	if err != nil {
+		return err
+	}
+	*u = *NewUser(data)
+	return nil
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
-    return json.Marshal(&UserInitializer{
-        Id: u.id,
-        Username: u.username,
-        
-    })
+	return json.Marshal(&UserInitializer{
+		Id:       u.id,
+		Username: u.username,
+	})
 }

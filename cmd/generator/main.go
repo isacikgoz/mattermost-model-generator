@@ -14,6 +14,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "not enough program arguments")
 		os.Exit(1)
 	}
+	// TODO: take output directory as an arg/flag
+	// TODO: take packages to generate as an arg/flag
 
 	for _, arg := range os.Args[1:] {
 		structs, err := parser.ParseFile(arg)

@@ -9,10 +9,9 @@ package model
 import "encoding/json"
 
 type Channel struct {
-    id string
-    name string
-    createAt int64
-   
+	id       string
+	name     string
+	createAt int64
 }
 
 // -------------------- Property Getters ------------------------ //
@@ -36,40 +35,37 @@ func (c *Channel) CreateAt() int64 {
 
 // ChannelInitializer provides a container struct to initialize a new Channel object.
 type ChannelInitializer struct {
-    Id string `json:"id"`
-    Name string `json:"name"`
-    CreateAt int64 `json:"create_at"`
-    
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	CreateAt int64  `json:"create_at"`
 }
 
 // NewChannel creates a new instance of Channel populated with the values from a
 // ChannelInitializer instance.
 func NewChannel(c *ChannelInitializer) *Channel {
-    return &Channel {
-        id: c.Id,
-        name: c.Name,
-        createAt: c.CreateAt,
-        
-    }
+	return &Channel{
+		id:       c.Id,
+		name:     c.Name,
+		createAt: c.CreateAt,
+	}
 }
 
 // -------------------- JSON Processing Functions -------------------- //
 
-func (c *Channel) UnmarshalJSON(b []byte) (error) {
-    var data *ChannelInitializer
-    err := json.Unmarshal(b, data)
-    if err != nil {
-        return err
-    }
-    *c = *NewChannel(data)
-    return nil
+func (c *Channel) UnmarshalJSON(b []byte) error {
+	var data *ChannelInitializer
+	err := json.Unmarshal(b, data)
+	if err != nil {
+		return err
+	}
+	*c = *NewChannel(data)
+	return nil
 }
 
 func (c *Channel) MarshalJSON() ([]byte, error) {
-    return json.Marshal(&ChannelInitializer{
-        Id: c.id,
-        Name: c.name,
-        CreateAt: c.createAt,
-        
-    })
+	return json.Marshal(&ChannelInitializer{
+		Id:       c.id,
+		Name:     c.name,
+		CreateAt: c.createAt,
+	})
 }

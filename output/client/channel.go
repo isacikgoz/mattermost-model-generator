@@ -7,8 +7,7 @@
 package client
 
 type Channel struct {
-    Id string `json:"id"`
-    Name string `json:"name"`
-    CreateAt int64 `json:"create_at"`
-   
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	CreateAt int64  `json:"create_at"`
 }
