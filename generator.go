@@ -144,7 +144,7 @@ func generateInitializer(fields []*ast.Field, baseTypeName string) InitializerPa
 
 func renderFile(params ModelParams) []byte {
 	buf := new(bytes.Buffer)
-	tmpl := initTemplate("file", "file.go.tmpl")
+	tmpl := initTemplate("model", "model.go.tmpl")
 	err := tmpl.Execute(buf, params)
 	if err != nil {
 		panic(err)
