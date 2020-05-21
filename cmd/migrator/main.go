@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"go/ast"
 	"go/format"
 	"go/parser"
 	"go/token"
@@ -53,9 +52,9 @@ func main() {
 			Name:    modelName,
 			Package: packageName,
 		}
-		ast.Walk(w, fileNode)
+		result := w.Process(fileNode)
 		buf := new(bytes.Buffer)
-		if err = format.Node(buf, fset, fileNode); err != nil {
+		if err = format.Node(buf, fset, result); err != nil {
 			log.Printf("error: %v\n", err)
 		} else if err := ioutil.WriteFile(fileName, buf.Bytes(), 0664); err != nil {
 			log.Printf("error: %v\n", err)
