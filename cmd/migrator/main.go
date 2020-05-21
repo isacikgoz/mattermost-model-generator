@@ -10,25 +10,40 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/grundleborg/mattermost-model-generator/internal/finder"
 )
 
-// go run ./cmd/migrator model Post $GOPATH/src/github.com/mattermost/mattermost-server/**/*.go
+// go run ./cmd/migrator model Post $GOPATH/src/github.com/mattermost/mattermost-server
 func main() {
 	if len(os.Args) < 4 {
-		fmt.Fprintln(os.Stderr, "not enough program arguments: [cmd] [package] [model] [files to scan]")
+		fmt.Fprintln(os.Stderr, "not enough program arguments: [cmd] [package] [model] [mattermost-server dir]")
 		os.Exit(1)
 	}
 	packageName := os.Args[1]
 	modelName := os.Args[2]
+	var goFiles []string
+	walker := func(fullPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if (info.IsDir() && strings.HasPrefix(info.Name(), ".")) || strings.Contains(fullPath, "mattermost-server/vendor") {
+			return nil
+		}
+		if path.Ext(info.Name()) == ".go" && !strings.HasSuffix(info.Name(), "_test") {
+			goFiles = append(goFiles, fullPath)
+		}
+		return nil
+	}
+	if err := filepath.Walk(os.Args[3], walker); err != nil {
+		log.Fatalf("could not scan folder: %v", err)
+	}
 	fset := token.NewFileSet()
 
-	for _, fileName := range os.Args[3:] {
-		if strings.Contains(fileName, "mattermost-server/vendor") {
-			continue
-		}
+	for _, fileName := range goFiles {
 		fileNode, err := parser.ParseFile(fset, fileName, nil, parser.AllErrors|parser.ParseComments)
 		if err != nil {
 			log.Printf("could not parse %s: %v", fileName, err)
