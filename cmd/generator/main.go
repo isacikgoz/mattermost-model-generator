@@ -16,7 +16,7 @@ func main() {
 	}
 	// TODO: take output directory as an arg/flag
 	// TODO: take packages to generate as an arg/flag
-
+	_ = os.Mkdir("output", 0755)
 	for _, arg := range os.Args[1:] {
 		structs, err := parser.ParseFile(arg)
 		if err != nil {

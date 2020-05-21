@@ -38,17 +38,21 @@ func New{{.Type}}({{receiver .Type}} *{{.Type}}Initializer) *{{.Type}} {
 {{ if include_patch .Fields}}
 // ------------------------ Patch object ------------------------ //
 
-// Apply applies the patch to the object
-func ({{receiver .Type}} *{{.Type}}) Apply(p *{{.Type}}Patch) {
+// Apply applies the patch to the object, returning modified instance
+func ({{receiver .Type}} *{{.Type}}) Apply(p *{{.Type}}Patch) *{{.Type}} {
+    copy := &{{.Type}} {
+        {{range .Fields}}{{.Name}}: {{receiver $.Type}}.{{.Name}},
+        {{end}}
+    }
     if p == nil {
-        return
+        return copy
     }
     {{range .Fields}} {{if patch_field .Tags}}if p.{{public .Name}} != nil {
         {{receiver $.Type}}.{{.Name}} = *p.{{public .Name}}
     }
     {{end}}
     {{end}} 
-    return
+    return copy
 }
 {{end}}
 // ---------------------- Property Getters ---------------------- //
