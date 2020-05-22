@@ -35,20 +35,28 @@ func New{{.Type}}({{receiver .Type}} *{{.Type}}Initializer) *{{.Type}} {
     }
 }
 
+func ({{receiver .Type}} *{{.Type}}) Clone() *{{.Type}} {
+    return &{{.Type}} {
+        {{range .Fields}}{{.Name}}: {{receiver $.Type}}.{{.Name}},
+        {{end}}
+    }
+}
+
 {{ if include_patch .Fields}}
 // ------------------------ Patch object ------------------------ //
 
-// Apply applies the patch to the object
-func ({{receiver .Type}} *{{.Type}}) Apply(p *{{.Type}}Patch) {
+// Apply applies the patch to the object, returning modified instance
+func ({{receiver .Type}} *{{.Type}}) Apply(p *{{.Type}}Patch) *{{.Type}} {
+    copy := {{receiver .Type}}.Clone()
     if p == nil {
-        return
+        return copy
     }
     {{range .Fields}} {{if patch_field .Tags}}if p.{{public .Name}} != nil {
         {{receiver $.Type}}.{{.Name}} = *p.{{public .Name}}
     }
     {{end}}
     {{end}} 
-    return
+    return copy
 }
 {{end}}
 // ---------------------- Property Getters ---------------------- //
@@ -56,6 +64,16 @@ func ({{receiver .Type}} *{{.Type}}) Apply(p *{{.Type}}Patch) {
 // {{public .Name}} gets the {{public .Name}} property of the {{$.Type}}
 func ({{receiver $.Type}} *{{$.Type}}) {{public .Name}}() {{.Type}} {
 	return {{receiver $.Type}}.{{.Name}}
+}
+{{end}}
+
+// ---------------------- Property Setters ---------------------- //
+{{range .Fields}}
+// {{public .Name}} sets the {{public .Name}} property of the {{$.Type}} and returns new instance
+func ({{receiver $.Type}} *{{$.Type}}) With{{public .Name}}(v {{.Type}}) *{{$.Type}} {
+    copy := {{receiver $.Type}}.Clone()
+    copy.{{.Name}} = v
+	return copy
 }
 {{end}}
 
