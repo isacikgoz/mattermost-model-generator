@@ -16,7 +16,6 @@ type Walker struct {
 
 type state struct {
 	pack       string
-	fn         string
 	paramLists map[*ast.FieldList][]*ast.Field // map of field list to specific fields to rename
 	funcLists  map[*ast.FuncDecl]interface{}   // map of field list to specific fields to rename
 }
@@ -109,6 +108,7 @@ func (w *Walker) Process(root ast.Node) ast.Node {
 	w.paramLists = make(map[*ast.FieldList][]*ast.Field)
 	w.funcLists = make(map[*ast.FuncDecl]interface{})
 	w.pack = root.(*ast.File).Name.Name
+	//findMutationForFunctionArgument(w.Name, w.Package, root.(*ast.File))
 	result := astutil.Apply(root, w.pre, w.post)
 	return result
 }
