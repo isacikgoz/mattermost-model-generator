@@ -61,6 +61,7 @@ func addCloneToBlock(block *ast.BlockStmt, fields []*ast.Field) *ast.BlockStmt {
 		List:   append(assignments, block.List...),
 	}
 }
+
 func (w *Walker) pre(c *astutil.Cursor) bool {
 	if parentFunc, ok := c.Parent().(*ast.FuncDecl); ok && w.funcLists[parentFunc] == parentFunc {
 		if stmt, ok := c.Node().(*ast.BlockStmt); ok {
@@ -99,9 +100,11 @@ func (w *Walker) pre(c *astutil.Cursor) bool {
 	}
 	return true
 }
+
 func (w *Walker) post(c *astutil.Cursor) bool {
 	return true
 }
+
 func (w *Walker) Process(root ast.Node) ast.Node {
 	w.paramLists = make(map[*ast.FieldList][]*ast.Field)
 	w.funcLists = make(map[*ast.FuncDecl]interface{})
