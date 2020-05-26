@@ -9,6 +9,7 @@ This documents describes the migration logic and defines the rules that needs to
 Add clone to mutating objects. Detect:
 1. Direct assignments, i.e. `obj.Id = model.NewId()`
 2. Inderect assignments, i.e. `obj.Stuff[0] = newStuff` and `obj.Stuff["test"] = "test2"`
+3. Deep assignments, i.e. `obj.Stuff.Id = model.NewId()`
 
 If any of the above cases are detected, rewrite the function so that the model parameter passed to it (for example `channel *model.Channel`) is renamed (for example `_channel *model.Channel`) and add a clone to the first line: `channel := _channel.Clone()`
 This will make sure that all following assignments will be applied to the clone of the model and not the origin.
