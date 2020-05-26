@@ -6,35 +6,12 @@ This documents describes the migration logic and defines the rules that needs to
 
 ### Mutating objects
 
-Add clone to mutating objects. To achieve this, detect cases like:
+Add clone to mutating objects. Detect:
+1. Direct assignments, i.e. `obj.Id = model.NewId()`
+2. Inderect assignments, i.e. `obj.Stuff[0] = newStuff` and `obj.Stuff["test"] = "test2"`
 
-#### Mutation case 1
-
-```golang
-foo.Id = foo.NewId()
-```
-
-Replace with following:
-
-```golang
-cFoo := foo.Apply(&FooPatch{
-    Id : model.NewId(),
-})
-```
-
-#### Mutation case 2
-
-```golang
-bars := foo.Bars
-bars[0] = newBar{}
-```
-
-Replace with following:
-
-```golang
-bars := foo.Bars() // will return a copy of the slice/map
-bars[0] = newBar{}
-```
+If any of the above cases are detected, rewrite the function so that the model parameter passed to it (for example `channel *model.Channel`) is renamed (for example `_channel *model.Channel`) and add a clone to the first line: `channel := _channel.Clone()`
+This will make sure that all following assignments will be applied to the clone of the model and not the origin.
 
 ### Field Access
 
