@@ -77,25 +77,14 @@ func (w *Walker) pre(c *astutil.Cursor) bool {
 		}
 	}
 	if fdecl, ok := c.Node().(*ast.FuncDecl); ok {
-		for _, field := range fdecl.Type.Params.List {
-			if star, ok := field.Type.(*ast.StarExpr); ok {
-				if s, ok := star.X.(*ast.SelectorExpr); ok {
-					ident := s.X.(*ast.Ident).Name
-					if ident == w.Package && s.Sel.Name == w.Name {
-						fmt.Printf("(pkg: %s, fn: %s) as fn param %s: *%s.%s\n", w.pack, fdecl.Name, field.Names[0].Name, ident, s.Sel.Name)
-
-						w.paramLists[fdecl.Type.Params] = append(w.paramLists[fdecl.Type.Params], field)
-						w.funcLists[fdecl] = fdecl
-					}
-					continue
-				}
-				if ident, ok := star.X.(*ast.Ident); ok && ident.Name == w.Name {
-					fmt.Printf("(pkg: %s, fn: %s) as fn param: *%s\n", w.pack, fdecl.Name, ident.Name)
-					w.paramLists[fdecl.Type.Params] = append(w.paramLists[fdecl.Type.Params], field)
-					w.funcLists[fdecl] = fdecl
-				}
-			}
+		fields, ok := findMutationForFunctionArgument(w.Name, w.Package, w.pack, fdecl)
+		if !ok {
+			return true
 		}
+		fmt.Printf("pkg: %s, fn: %s\n", w.pack, fdecl.Name)
+
+		w.paramLists[fdecl.Type.Params] = fields
+		w.funcLists[fdecl] = fdecl
 	}
 	return true
 }
@@ -108,7 +97,5 @@ func (w *Walker) Process(root ast.Node) ast.Node {
 	w.paramLists = make(map[*ast.FieldList][]*ast.Field)
 	w.funcLists = make(map[*ast.FuncDecl]interface{})
 	w.pack = root.(*ast.File).Name.Name
-	//findMutationForFunctionArgument(w.Name, w.Package, root.(*ast.File))
-	result := astutil.Apply(root, w.pre, w.post)
-	return result
+	return astutil.Apply(root, w.pre, w.post)
 }
