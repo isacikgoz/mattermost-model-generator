@@ -9,13 +9,14 @@ package model
 import "encoding/json"
 
 type {{.Type}} struct {
-   {{range .Fields}} {{.Name}} {{.Type}}
+   {{range .Fields}} {{.Name}} {{processType .Type}}
    {{end}}
 }
 
+
 // {{.Type}}Initializer provides a container struct to initialize a new {{.Type}} object.
 type {{.Type}}Initializer struct {
-    {{range .Fields}}{{public .Name}} {{.Type}} {{json .Tags}}
+    {{range .Fields}}{{public .Name}}  {{.Type}} {{json .Tags}}
     {{end}}
 }
 
@@ -29,17 +30,19 @@ type {{.Type}}Patch struct {
 // New{{.Type}} creates a new instance of {{.Type}} populated with the values from a
 // {{.Type}}Initializer instance.
 func New{{.Type}}({{receiver .Type}} *{{.Type}}Initializer) *{{.Type}} {
-    return &{{.Type}} {
-        {{range .Fields}}{{.Name}}: {{receiver $.Type}}.{{public .Name}},
+    dst := &{{.Type}} {
+        {{range .Fields}}{{.Name}}: {{generateInitializer  $.Type .Name .Type}},
         {{end}}
     }
+    return dst
 }
 
-func ({{receiver .Type}} *{{.Type}}) Clone() *{{.Type}} {
-    return &{{.Type}} {
+func ({{receiver .Type}} *{{.Type}}) clone() *{{.Type}} {
+    dst := &{{.Type}} {
         {{range .Fields}}{{.Name}}: {{receiver $.Type}}.{{.Name}},
         {{end}}
     }
+    return dst
 }
 
 {{ if include_patch .Fields}}
@@ -47,7 +50,7 @@ func ({{receiver .Type}} *{{.Type}}) Clone() *{{.Type}} {
 
 // Apply applies the patch to the object, returning modified instance
 func ({{receiver .Type}} *{{.Type}}) Apply(p *{{.Type}}Patch) *{{.Type}} {
-    copy := {{receiver .Type}}.Clone()
+    copy := {{receiver .Type}}.clone()
     if p == nil {
         return copy
     }
@@ -63,16 +66,16 @@ func ({{receiver .Type}} *{{.Type}}) Apply(p *{{.Type}}Patch) *{{.Type}} {
 {{range .Fields}}
 // {{public .Name}} gets the {{public .Name}} property of the {{$.Type}}
 func ({{receiver $.Type}} *{{$.Type}}) {{public .Name}}() {{.Type}} {
-	return {{receiver $.Type}}.{{.Name}}
+	return {{receiver $.Type}}.{{.Name}}{{generateGetStatement .Type}}
 }
 {{end}}
 
 // ---------------------- Property Setters ---------------------- //
 {{range .Fields}}
-// {{public .Name}} sets the {{public .Name}} property of the {{$.Type}} and returns new instance
+// Set{{public .Name}} sets the {{public .Name}} property of the {{$.Type}} and returns new instance
 func ({{receiver $.Type}} *{{$.Type}}) With{{public .Name}}(v {{.Type}}) *{{$.Type}} {
-    copy := {{receiver $.Type}}.Clone()
-    copy.{{.Name}} = v
+    copy := {{receiver $.Type}}.clone()
+    copy.{{.Name}}{{generateSetStatement .Type}}
 	return copy
 }
 {{end}}
@@ -91,7 +94,22 @@ func ({{receiver .Type}} *{{.Type}}) UnmarshalJSON(b []byte) (error) {
 
 func ({{receiver .Type}} *{{.Type}}) MarshalJSON() ([]byte, error) {
     return json.Marshal(&{{.Type}}Initializer{
-        {{range .Fields}}{{public .Name}}: {{receiver $.Type}}.{{.Name}},
+        {{range .Fields}}{{public .Name}}: {{receiver $.Type}}.{{.Name}}{{generateGetStatement .Type}},
         {{end}}
     })
 }
+
+{{range $key, $value := sliceTypes .Fields}}
+    type {{$key}} interface  {   
+    Len() int
+    Get(i int) {{$value}}
+    Set(i int, v {{$value}}) *{{$key}}
+    Replace(v []{{$value}}) *{{$key}}
+    Range() []{{$value}}
+    Append(v ...{{$value}}) *{{$key}}
+    }
+    func New{{$key}}([]{{$value}}) {{$key}} {
+        // TODO: implement
+        return nil
+    }
+{{end}}
