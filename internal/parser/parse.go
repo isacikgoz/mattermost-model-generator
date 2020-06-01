@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"os"
@@ -11,6 +13,12 @@ import (
 	"github.com/fatih/structtag"
 	"github.com/grundleborg/mattermost-model-generator/internal/model"
 )
+
+func FormatNode(node ast.Node) string {
+	buf := new(bytes.Buffer)
+	_ = format.Node(buf, token.NewFileSet(), node)
+	return buf.String()
+}
 
 // ParseFile reads a file and generates representation of structs to be generated.
 func ParseFile(path string) ([]*model.Struct, error) {
@@ -56,9 +64,15 @@ func parseFields(fields []*ast.Field) ([]*model.Field, error) {
 		for _, tag := range st.Tags() {
 			tags[tag.Key] = append([]string{tag.Name}, tag.Options...)
 		}
+		// name := ""
+		// if n, ok := field.Type.(*ast.Ident); ok {
+		// 	name = n.Name
+		// } else if n2, ok := field.Type.(*ast.ArrayType); ok {
+		// 	name = n2.Elt.(*ast.Ident).Name
+		// }
 		fs = append(fs, &model.Field{
 			Name: field.Names[0].Name,
-			Type: field.Type.(*ast.Ident).Name,
+			Type: FormatNode(field.Type),
 			Tags: tags,
 		})
 	}

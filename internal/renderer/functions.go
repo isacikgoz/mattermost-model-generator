@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -11,6 +12,40 @@ var funcMap = template.FuncMap{
 	// make s string start with upper case
 	"public": func(s string) string {
 		return strings.Title(s)
+	},
+	"sliceTypes": func(s []*model.Field) map[string]string {
+		ret := map[string]string{}
+		for _, r := range s {
+			if strings.Contains(r.Type, "[]") {
+				ret["SliceOf"+strings.Title(r.Type[2:])] = r.Type[2:]
+			}
+		}
+		return ret
+	},
+	"generateInitializer": func(t, name, ft string) string {
+		s := fmt.Sprintf("%s.%s", strings.ToLower(string(t[0])), strings.Title(name))
+		if strings.Contains(ft, "[]") {
+			return fmt.Sprintf("NewSliceOf%s(%s)", strings.Title(ft[2:]), s)
+		}
+		return s
+	},
+	"generateSetStatement": func(t string) string {
+		if strings.Contains(t, "[]") {
+			return ".Replace(v)"
+		}
+		return " = v"
+	},
+	"generateGetStatement": func(t string) string {
+		if strings.Contains(t, "[]") {
+			return ".Range()"
+		}
+		return ""
+	},
+	"processType": func(s string) string {
+		if strings.Contains(s, "[]") {
+			return "SliceOf" + strings.Title(s[2:])
+		}
+		return s
 	},
 	// make s string start with upper case
 	"receiver": func(s string) string {
