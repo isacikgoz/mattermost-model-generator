@@ -6,9 +6,9 @@ import (
 
 // eg. vartype: Channel, pkg: model
 // returns true if there is a mutation for the given object
-func findMutationForFunctionArgument(vartype, varpackage, functionpackage string, fdecl *ast.FuncDecl) ([]*ast.Field, bool) {
+func findMutationForFunctionArgument(vartype, varpackage, functionpackage string, fdecl *ast.FuncDecl) (map[*ast.Field][]*ast.AssignStmt, bool) {
 	var assigned bool
-	var mutatedFields []*ast.Field
+	mutatedFields := make(map[*ast.Field][]*ast.AssignStmt)
 
 	for _, field := range fdecl.Type.Params.List {
 		// if we pass the pointer proceed
@@ -32,9 +32,9 @@ func findMutationForFunctionArgument(vartype, varpackage, functionpackage string
 		}
 
 		for _, name := range field.Names {
-			if found := findAssignmentsInBlock(name.Name, fdecl.Body); found {
+			if assignements, found := findAssignmentsInBlock(name.Name, fdecl.Body); found {
 				assigned = true
-				mutatedFields = append(mutatedFields, field)
+				mutatedFields[field] = assignements
 			}
 		}
 	}
@@ -42,7 +42,9 @@ func findMutationForFunctionArgument(vartype, varpackage, functionpackage string
 	return mutatedFields, assigned
 }
 
-func findAssignmentsInBlock(varname string, block *ast.BlockStmt) bool {
+func findAssignmentsInBlock(varname string, block *ast.BlockStmt) ([]*ast.AssignStmt, bool) {
+	var assignments []*ast.AssignStmt
+	var assigned bool
 	for _, a := range block.List {
 		// look to assignments
 		as, ok := a.(*ast.AssignStmt)
@@ -63,8 +65,9 @@ func findAssignmentsInBlock(varname string, block *ast.BlockStmt) bool {
 			if ident.Name != varname {
 				continue
 			}
-			return true
+			assignments = append(assignments, as)
+			assigned = true
 		}
 	}
-	return false
+	return assignments, assigned
 }
