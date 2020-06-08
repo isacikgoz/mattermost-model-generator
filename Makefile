@@ -1,7 +1,7 @@
 .PHONY: generate
 
 generate:
-	go generate
+	go run ./cmd/generator ./input/channel.go ./input/user.go
 	gofmt -s -w ./output/.
 
 migrate_channel:

@@ -30,7 +30,7 @@ func Render(pkg model.Package, st *model.Struct) ([]byte, error) {
 }
 
 // RenderToFile renders struct to a file in the package folder
-func RenderToFile(dir string, pkg model.Package, st *model.Struct) error {
+func RenderToFile(dir string, pkg model.Package, st *model.Struct, types ...*model.CustomType) error {
 	buf := new(bytes.Buffer)
 	bytes, err := Render(pkg, st)
 	if err != nil {
