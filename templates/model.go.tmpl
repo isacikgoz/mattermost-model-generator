@@ -8,11 +8,14 @@ package model
 
 import "encoding/json"
 
+{{range .CustomTypes}}
+{{if customType .Name}}type {{.Name}} {{.UnderlyingType}}
+{{end}}{{end}}
+
 type {{.Type}} struct {
    {{range .Fields}} {{.Name}} {{processType .Type}}
    {{end}}
 }
-
 
 // {{.Type}}Initializer provides a container struct to initialize a new {{.Type}} object.
 type {{.Type}}Initializer struct {

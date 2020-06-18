@@ -6,6 +6,10 @@
 
 package client
 
+{{range .CustomTypes}}
+{{if customType .Name}}type {{.Name}} {{.UnderlyingType}}
+{{end}}{{end}}
+
 type {{.Type}} struct {
    {{range .Fields}} {{public .Name}} {{.Type}} {{json .Tags}}
    {{end}}

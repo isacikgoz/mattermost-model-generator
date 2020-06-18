@@ -14,6 +14,11 @@ import (
 	"github.com/grundleborg/mattermost-model-generator/internal/model"
 )
 
+type File struct {
+	Struct *model.Struct       // the main type for the file
+	Types  []*model.CustomType // custom types for this struct
+}
+
 func FormatNode(node ast.Node) string {
 	buf := new(bytes.Buffer)
 	_ = format.Node(buf, token.NewFileSet(), node)
@@ -21,35 +26,43 @@ func FormatNode(node ast.Node) string {
 }
 
 // ParseFile reads a file and generates representation of structs to be generated.
-func ParseFile(path string) ([]*model.Struct, error) {
+func ParseFile(path string) (*model.Struct, error) {
 	file, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ParseComments)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse file %q: %w", path, err)
 	}
 
-	var structs []*model.Struct
+	var str *model.Struct
+	var types []*model.CustomType
 	ast.Inspect(file, func(n ast.Node) bool {
 		tp, ok := n.(*ast.TypeSpec)
 		if !ok {
 			return true
 		}
-		st, ok := tp.Type.(*ast.StructType)
-		if !ok {
+		switch t := tp.Type.(type) {
+		case *ast.StructType:
+			fields, err := parseFields(t.Fields.List)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "could not parse fields for %q: %s", tp.Name.Name, err)
+				return false // maybe replace this with a panic?
+			}
+			str = &model.Struct{
+				Type:   tp.Name.Name,
+				Fields: fields,
+			}
+			return true
+		case *ast.Ident:
+			types = append(types, &model.CustomType{
+				Name:           tp.Name.Name,
+				UnderlyingType: t.Name,
+			})
 			return true
 		}
-		fields, err := parseFields(st.Fields.List)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not parse fields for %q: %s", tp.Name.Name, err)
-			return false // maybe replace this with a panic?
-		}
-		structs = append(structs, &model.Struct{
-			Type:   tp.Name.Name,
-			Fields: fields,
-		})
 		return true
 	})
 
-	return structs, nil
+	str.CustomTypes = types
+	return str, nil
 }
 
 func parseFields(fields []*ast.Field) ([]*model.Field, error) {
@@ -64,12 +77,7 @@ func parseFields(fields []*ast.Field) ([]*model.Field, error) {
 		for _, tag := range st.Tags() {
 			tags[tag.Key] = append([]string{tag.Name}, tag.Options...)
 		}
-		// name := ""
-		// if n, ok := field.Type.(*ast.Ident); ok {
-		// 	name = n.Name
-		// } else if n2, ok := field.Type.(*ast.ArrayType); ok {
-		// 	name = n2.Elt.(*ast.Ident).Name
-		// }
+
 		fs = append(fs, &model.Field{
 			Name: field.Names[0].Name,
 			Type: FormatNode(field.Type),

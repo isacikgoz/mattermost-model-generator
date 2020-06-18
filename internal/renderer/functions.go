@@ -22,6 +22,14 @@ var funcMap = template.FuncMap{
 		}
 		return ret
 	},
+	"customType": func(s string) bool {
+		switch s {
+		case "bool", "byte", "[]byte", "string", "[]string", "int", "int32", "int64", "float32", "float64":
+			return false
+		default:
+			return true
+		}
+	},
 	"generateInitializer": func(t, name, ft string) string {
 		s := fmt.Sprintf("%s.%s", strings.ToLower(string(t[0])), strings.Title(name))
 		if strings.Contains(ft, "[]") {
